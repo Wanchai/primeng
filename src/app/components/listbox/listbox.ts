@@ -22,7 +22,7 @@ export const LISTBOX_VALUE_ACCESSOR: any = {
       <div class="ui-widget-header ui-corner-all ui-listbox-header ui-helper-clearfix" *ngIf="headerFacet">
         <ng-content select="p-header"></ng-content>
       </div>
-      <div class="ui-widget-header ui-corner-all ui-listbox-header ui-helper-clearfix" *ngIf="(checkbox && multiple) || filter" [ngClass]="{'ui-listbox-header-w-checkbox': checkbox}">
+      <div class="ui-widget-header ui-corner-all ui-listbox-header ui-helper-clearfix" *ngIf="(checkbox && multiple && showToggleAll) || filter" [ngClass]="{'ui-listbox-header-w-checkbox': checkbox}">
         <div class="ui-chkbox ui-widget" *ngIf="checkbox && multiple && showToggleAll">
           <div class="ui-helper-hidden-accessible">
             <input #cb type="checkbox" readonly="readonly" [checked]="allChecked">
@@ -32,7 +32,7 @@ export const LISTBOX_VALUE_ACCESSOR: any = {
           </div>
         </div>
         <div class="ui-listbox-filter-container" *ngIf="filter">
-          <input type="text" role="textbox" (input)="onFilter($event)" class="ui-inputtext ui-widget ui-state-default ui-corner-all" [disabled]="disabled">
+          <input type="text" role="textbox" [value]="filterValue||''" (input)="onFilter($event)" class="ui-inputtext ui-widget ui-state-default ui-corner-all" [disabled]="disabled">
           <span class="ui-listbox-filter-icon pi pi-search"></span>
         </div>
       </div>
@@ -101,7 +101,7 @@ export class Listbox implements AfterContentInit, ControlValueAccessor {
 
     public itemTemplate: TemplateRef<any>;
 
-    public filterValue: string;
+    public _filterValue: string;
 
     public filtered: boolean;
 
@@ -126,6 +126,14 @@ export class Listbox implements AfterContentInit, ControlValueAccessor {
     set options(val: any[]) {
         let opts = this.optionLabel ? this.objectUtils.generateSelectItems(val, this.optionLabel) : val;
         this._options = opts;
+    }
+    
+    @Input() get filterValue(): string {
+        return this._filterValue;
+    }
+    
+    set filterValue(val: string) {
+        this._filterValue = val;
     }
 
     ngAfterContentInit() {
@@ -319,15 +327,10 @@ export class Listbox implements AfterContentInit, ControlValueAccessor {
     }
 
     get allChecked(): boolean {
-        if (this.filterValue) {
+        if (this.filterValue)
             return this.allFilteredSelected();
-        }
-            
-        else {
-            let optionCount = this.getEnabledOptionCount();
-
-            return this.value && this.options && (this.value.length > 0 && this.value.length === optionCount);
-        }
+        else
+            return this.value && this.options && (this.value.length > 0 && this.value.length === this.getEnabledOptionCount());
     }
 
     getEnabledOptionCount(): number {
@@ -365,7 +368,7 @@ export class Listbox implements AfterContentInit, ControlValueAccessor {
 
     onFilter(event) {
         let query = event.target.value.trim().toLowerCase();
-        this.filterValue = query.length ? query : null;
+        this._filterValue = query.length ? query : null;
     }
 
     toggleAll(event, checkbox) {

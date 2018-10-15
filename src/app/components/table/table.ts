@@ -959,13 +959,13 @@ export class Table implements OnInit, AfterContentInit, BlockableUI {
         return index;
     }
 
-    toggleRowWithRadio(event: Event, rowData:any) {
+    toggleRowWithRadio(event: any, rowData:any) {
         this.preventSelectionSetterPropagation = true;
 
         if(this.selection != rowData) {
             this._selection = rowData;
             this.selectionChange.emit(this.selection);
-            this.onRowSelect.emit({originalEvent: event, data: rowData, type: 'radiobutton'});
+            this.onRowSelect.emit({originalEvent: event.originalEvent, index: event.rowIndex, data: rowData, type: 'radiobutton'});
             
             if(this.dataKey) {
                 this.selectionKeys = {};
@@ -975,7 +975,7 @@ export class Table implements OnInit, AfterContentInit, BlockableUI {
         else {
             this._selection = null;
             this.selectionChange.emit(this.selection);
-            this.onRowUnselect.emit({originalEvent: event, data: rowData, type: 'radiobutton'});
+            this.onRowUnselect.emit({originalEvent: event.originalEvent, index: event.rowIndex, data: rowData, type: 'radiobutton'});
         }
 
         this.tableService.onSelectionChange();
@@ -991,7 +991,7 @@ export class Table implements OnInit, AfterContentInit, BlockableUI {
             let selectionIndex = this.findIndexInSelection(rowData);
             this._selection = this.selection.filter((val, i) => i != selectionIndex);
             this.selectionChange.emit(this.selection);
-            this.onRowUnselect.emit({ originalEvent: event.originalEvent, data: rowData, type: 'checkbox' });
+            this.onRowUnselect.emit({ originalEvent: event.originalEvent, index: event.rowIndex, data: rowData, type: 'checkbox' });
             if (dataKeyValue) {
                 delete this.selectionKeys[dataKeyValue];
             }
@@ -999,12 +999,12 @@ export class Table implements OnInit, AfterContentInit, BlockableUI {
         else {
             this._selection = this.selection ? [...this.selection, rowData] : [rowData];
             this.selectionChange.emit(this.selection);
-            this.onRowSelect.emit({ originalEvent: event.originalEvent, data: rowData, type: 'checkbox' });
+            this.onRowSelect.emit({ originalEvent: event.originalEvent, index: event.rowIndex, data: rowData, type: 'checkbox' });
             if (dataKeyValue) {
                 this.selectionKeys[dataKeyValue] = 1;
             }
         }
-        
+
         this.tableService.onSelectionChange();
     }
 
@@ -1481,10 +1481,15 @@ export class Table implements OnInit, AfterContentInit, BlockableUI {
     onColumnResizeEnd(event, column) {
         let delta = this.resizeHelperViewChild.nativeElement.offsetLeft - this.lastResizerHelperX;
         let columnWidth = column.offsetWidth;
-        let newColumnWidth = columnWidth + delta;
-        let minWidth = column.style.minWidth || 15;
-
-        if (columnWidth + delta > parseInt(minWidth)) {
+        let minWidth = parseInt(column.style.minWidth || 15);
+        
+        if (columnWidth + delta < minWidth) {
+            delta = minWidth - columnWidth;
+        }
+    
+        const newColumnWidth = columnWidth + delta;
+    
+        if (newColumnWidth >= minWidth) {
             if (this.columnResizeMode === 'fit') {
                 let nextColumn = column.nextElementSibling;
                 while (!nextColumn.offsetParent) {
@@ -1760,12 +1765,12 @@ export class Table implements OnInit, AfterContentInit, BlockableUI {
     selector: '[pTableBody]',
     template: `
         <ng-container *ngIf="!dt.expandedRowTemplate">
-            <ng-template ngFor let-rowData let-rowIndex="index" [ngForOf]="dt.paginator ? ((dt.filteredValue||dt.value) | slice:(dt.lazy ? 0 : dt.first):((dt.lazy ? 0 : dt.first) + dt.rows)) : (dt.filteredValue||dt.value)" [ngForTrackBy]="dt.rowTrackBy">
+            <ng-template ngFor let-rowData let-rowIndex="index" [ngForOf]="(dt.paginator && !dt.lazy) ? ((dt.filteredValue||dt.value) | slice:dt.first:(dt.first + dt.rows)) : (dt.filteredValue||dt.value)" [ngForTrackBy]="dt.rowTrackBy">
                 <ng-container *ngTemplateOutlet="template; context: {$implicit: rowData, rowIndex: dt.paginator ? (dt.first + rowIndex) : rowIndex, columns: columns}"></ng-container>
             </ng-template>
         </ng-container>
         <ng-container *ngIf="dt.expandedRowTemplate">
-            <ng-template ngFor let-rowData let-rowIndex="index" [ngForOf]="dt.paginator ? ((dt.filteredValue||dt.value) | slice:(dt.lazy ? 0 : dt.first):((dt.lazy ? 0 : dt.first) + dt.rows)) : (dt.filteredValue||dt.value)" [ngForTrackBy]="dt.rowTrackBy">
+            <ng-template ngFor let-rowData let-rowIndex="index" [ngForOf]="(dt.paginator && !dt.lazy) ? ((dt.filteredValue||dt.value) | slice:dt.first:(dt.first + dt.rows)) : (dt.filteredValue||dt.value)" [ngForTrackBy]="dt.rowTrackBy">
                 <ng-container *ngTemplateOutlet="template; context: {$implicit: rowData, rowIndex: dt.paginator ? (dt.first + rowIndex) : rowIndex, columns: columns, expanded: dt.isRowExpanded(rowData)}"></ng-container>
                 <ng-container *ngIf="dt.isRowExpanded(rowData)">
                     <ng-container *ngTemplateOutlet="dt.expandedRowTemplate; context: {$implicit: rowData, rowIndex: dt.paginator ? (dt.first + rowIndex) : rowIndex, columns: columns}"></ng-container>
@@ -1881,16 +1886,6 @@ export class ScrollableView implements AfterViewInit,OnDestroy,AfterViewChecked 
                 });
             });
         }
-
-        if (this.frozen) {
-            this.columnsSubscription = this.dt.tableService.columnsSource$.subscribe(() => {
-                this.zone.runOutsideAngular(() => {
-                    setTimeout(() => {
-                        this.setScrollHeight();
-                    }, 50);
-                });
-            });
-        }
         
         this.initialized = false;
      }
@@ -1938,6 +1933,16 @@ export class ScrollableView implements AfterViewInit,OnDestroy,AfterViewChecked 
         this.bindEvents();
         this.setScrollHeight();
         this.alignScrollBar();
+
+        if (this.frozen) {
+            this.columnsSubscription = this.dt.tableService.columnsSource$.subscribe(() => {
+                this.zone.runOutsideAngular(() => {
+                    setTimeout(() => {
+                        this.setScrollHeight();
+                    }, 50);
+                });
+            });
+        }
 
         if(this.dt.virtualScroll) {
             this.setVirtualScrollerHeight();
@@ -2570,7 +2575,7 @@ export class ReorderableColumn implements AfterViewInit, OnDestroy {
     }
 
     onMouseDown(event) {
-        if (event.target.nodeName === 'INPUT' || this.domHandler.hasClass(event.target, 'ui-column-resizer'))
+        if (event.target.nodeName === 'INPUT' || event.target.nodeName === 'TEXTAREA' || this.domHandler.hasClass(event.target, 'ui-column-resizer'))
             this.el.nativeElement.draggable = false;
         else
             this.el.nativeElement.draggable = true;
@@ -2846,6 +2851,8 @@ export class TableRadioButton  {
 
     @Input() value: any;
 
+    @Input() index: number;
+
     @ViewChild('box') boxViewChild: ElementRef;
 
     checked: boolean;
@@ -2864,7 +2871,10 @@ export class TableRadioButton  {
 
     onClick(event: Event) {
         if(!this.disabled) {
-            this.dt.toggleRowWithRadio(event, this.value);
+            this.dt.toggleRowWithRadio({
+                originalEvent: event,
+                rowIndex: this.index
+            }, this.value);
         }
         this.domHandler.clearSelection();
     }
@@ -2905,6 +2915,8 @@ export class TableCheckbox  {
 
     @Input() value: any;
 
+    @Input() index: number;
+
     @ViewChild('box') boxViewChild: ElementRef;
 
     checked: boolean;
@@ -2923,7 +2935,10 @@ export class TableCheckbox  {
 
     onClick(event: Event) {
         if(!this.disabled) {
-            this.dt.toggleRowWithCheckbox(event, this.value);
+            this.dt.toggleRowWithCheckbox({
+                originalEvent: event,
+                rowIndex: this.index
+            }, this.value);
         }
         this.domHandler.clearSelection();
     }
@@ -2985,10 +3000,12 @@ export class TableHeaderCheckbox  {
     }
 
     onClick(event: Event, checked) {
-        if(this.dt.value && this.dt.value.length > 0) {
-            this.dt.toggleRowsWithCheckbox(event, !checked);
+        if (!this.disabled) {
+            if (this.dt.value && this.dt.value.length > 0) {
+                this.dt.toggleRowsWithCheckbox(event, !checked);
+            }
         }
-        
+
         this.domHandler.clearSelection();
     }
 

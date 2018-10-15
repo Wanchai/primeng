@@ -25,7 +25,7 @@ import {SelectItem} from '../common/selectitem';
                     <ng-template ngFor let-rowData let-rowIndex="index" [ngForOf]="paginator ? ((filteredValue||value) | slice:(lazy ? 0 : first):((lazy ? 0 : first) + rows)) : (filteredValue||value)" [ngForTrackBy]="trackBy">
                         <ng-container *ngTemplateOutlet="itemTemplate; context: {$implicit: rowData, rowIndex: rowIndex}"></ng-container>
                     </ng-template>
-                    <div *ngIf="isEmpty()" class="ui-widget-content ui-g-12">{{emptyMessage}}</div>
+                    <div *ngIf="isEmpty()" class="ui-g-12 ui-dataview-emptymessage">{{emptyMessage}}</div>
                 </div>
             </div>
             <p-paginator [rows]="rows" [first]="first" [totalRecords]="totalRecords" [pageLinkSize]="pageLinks" [alwaysShow]="alwaysShowPaginator"
@@ -76,6 +76,8 @@ export class DataView implements OnInit,AfterContentInit,BlockableUI {
 
     @Input() loadingIcon: string = 'pi pi-spinner';
 
+    @Input() first: number = 0;
+
     @Output() onPage: EventEmitter<any> = new EventEmitter();
 
     @Output() onSort: EventEmitter<any> = new EventEmitter();
@@ -97,8 +99,6 @@ export class DataView implements OnInit,AfterContentInit,BlockableUI {
     paginatorLeftTemplate: TemplateRef<any>;
 
     paginatorRightTemplate: TemplateRef<any>;
-
-    first: number = 0;
     
     filteredValue: any[];
 
@@ -187,6 +187,11 @@ export class DataView implements OnInit,AfterContentInit,BlockableUI {
     set value(val:any[]) {
         this._value = val;
         this.updateTotalRecords();
+        if (!this.lazy) {
+            if(this.hasFilter())  {     // already filters
+                this.filter(this.filterValue);
+            }
+        }
     }
 
     changeLayout(layout: string) {

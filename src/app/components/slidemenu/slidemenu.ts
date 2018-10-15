@@ -12,8 +12,8 @@ import {RouterModule} from '@angular/router';
             [style.width.px]="menuWidth" [style.left.px]="root ? slideMenu.left : slideMenu.menuWidth"
             [style.transitionProperty]="root ? 'left' : 'none'" [style.transitionDuration]="effectDuration + 'ms'" [style.transitionTimingFunction]="easing">
             <ng-template ngFor let-child [ngForOf]="(root ? item : item.items)">
-                <li *ngIf="child.separator" class="ui-menu-separator ui-widget-content">
-                <li *ngIf="!child.separator" #listitem [ngClass]="{'ui-menuitem ui-widget ui-corner-all':true,'ui-menuitem-active':listitem==activeItem}"
+                <li *ngIf="child.separator" class="ui-menu-separator ui-widget-content" [ngClass]="{'ui-helper-hidden': child.visible === false}">
+                <li *ngIf="!child.separator" #listitem [ngClass]="{'ui-menuitem ui-widget ui-corner-all':true,'ui-menuitem-active':listitem==activeItem,'ui-helper-hidden': child.visible === false}"
                     [class]="child.styleClass" [ngStyle]="child.style">
                     <a *ngIf="!child.routerLink" [href]="child.url||'#'" class="ui-menuitem-link ui-corner-all" [attr.target]="child.target" [attr.title]="child.title" [attr.id]="child.id"
                         [ngClass]="{'ui-state-disabled':child.disabled}" 
@@ -96,7 +96,7 @@ export class SlideMenuSub implements OnDestroy {
     template: `
         <div #container [ngClass]="{'ui-slidemenu ui-widget ui-widget-content ui-corner-all':true, 'ui-slidemenu-dynamic ui-shadow':popup}" 
             [class]="styleClass" [ngStyle]="style" (click)="onClick($event)"
-            [@overlayAnimation]="'visible'" [@.disabled]="popup !== true" (@overlayAnimation.start)="onOverlayAnimationStart($event)" *ngIf="!popup || visible">
+            [@overlayAnimation]="{value: 'visible', params: {showTransitionParams: showTransitionOptions, hideTransitionParams: hideTransitionOptions}}" [@.disabled]="popup !== true" (@overlayAnimation.start)="onOverlayAnimationStart($event)" *ngIf="!popup || visible">
             <div class="ui-slidemenu-wrapper" [style.height.px]="viewportHeight">
                 <div #slideMenuContent class="ui-slidemenu-content">
                     <p-slideMenuSub [item]="model" root="root" [index]="0" [menuWidth]="menuWidth" [effectDuration]="effectDuration" [easing]="easing"></p-slideMenuSub>
@@ -117,8 +117,8 @@ export class SlideMenuSub implements OnDestroy {
                 transform: 'translateY(0)',
                 opacity: 1
             })),
-            transition('void => visible', animate('225ms ease-out')),
-            transition('visible => void', animate('195ms ease-in'))
+            transition('void => visible', animate('{{showTransitionParams}}')),
+            transition('visible => void', animate('{{hideTransitionParams}}'))
         ])
     ],
     providers: [DomHandler]
@@ -149,6 +149,10 @@ export class SlideMenu implements AfterViewChecked, OnDestroy {
     
     @Input() baseZIndex: number = 0;
     
+    @Input() showTransitionOptions: string = '225ms ease-out';
+
+    @Input() hideTransitionOptions: string = '195ms ease-in';
+
     containerViewChild: ElementRef;
     
     backwardViewChild: ElementRef;

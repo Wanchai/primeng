@@ -82,7 +82,7 @@ export class MyModel &#123;
             &#123;label:'New York', value:&#123;id:1, name: 'New York', code: 'NY'&#125;&#125;,
             &#123;label:'Rome', value:&#123;id:2, name: 'Rome', code: 'RM'&#125;&#125;,
             &#123;label:'London', value:&#123;id:3, name: 'London', code: 'LDN'&#125;&#125;,
-            &#123;label:'Istanbul', value:&#123;id:4, name: 'Istanbul', code: 'IST'&#125;&#125;
+            &#123;label:'Istanbul', value:&#123;id:4, name: 'Istanbul', code: 'IST'&#125;&#125;,
             &#123;label:'Paris', value:&#123;id:5, name: 'Paris', code: 'PRS'&#125;&#125;
         ];
 
@@ -176,7 +176,7 @@ addOption() &#123;
         using p-header and p-footer element.</p>
       <pre>
 <code class="language-markup" pCode ngNonBindable>
-&lt;p-listbox [options]="cars" [(ngModel)]="selectedCar"&#125;"&gt;
+&lt;p-listbox [options]="cars" [(ngModel)]="selectedCar"&gt;
     &lt;p-header&gt;
       &lt;i class="fa fa-car"&gt;&lt;/i&gt;
       List of Car
@@ -269,6 +269,12 @@ export class MyModel &#123;
                 <td>string</td>
                 <td>contains</td>
                 <td>Defines how the items are filtered, valid values are "contains" (default) and "startsWith".</td>
+              </tr>
+              <tr>
+                  <td>filterValue</td>
+                  <td>string</td>
+                  <td>null</td>
+                  <td>When specified, filter displays with this value.</td>
               </tr>
               <tr>
                 <td>readonly</td>
